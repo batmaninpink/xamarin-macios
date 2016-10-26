@@ -2229,6 +2229,7 @@ namespace XamCore.Registrar {
 				if (isPlatformType && IsSimulatorOrDesktop && IsMetalType (@class))
 					continue; // Metal isn't supported in the simulator.
 #else
+/*
 				// Don't register 64-bit only API on 32-bit XM
 				if (!Is64Bits)
 				{
@@ -2243,7 +2244,7 @@ namespace XamCore.Registrar {
 				// These are 64-bit frameworks that extend NSExtensionContext / NSUserActivity, which you can't do
 				// if the header doesn't declare them. So hack it away, since they are useless in 64-bit anyway
 				if (!Is64Bits && (IsMapKitType (@class) || IsIntentsType (@class)))
-					continue;
+					continue;*/
 #endif
 
 				

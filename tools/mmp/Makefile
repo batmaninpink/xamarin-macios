@@ -126,7 +126,7 @@ mmp_sources = \
 DEFINES = -d:MONOMAC -d:MMP $(APPLETLS_DEFINES)
 
 mmp.exe: Makefile $(MONO_CECIL_DLL) $(MONO_CECIL_MDB_DLL) $(mmp_sources) config config_mobile Info.plist.tmpl $(tuner_sources) $(linker_resources)
-	$(Q_MCS) $(SYSTEM_MCS) -unsafe -out:mmp.exe $(DEFINES) -r:$(MONO_CECIL_DLL) -r:$(MONO_CECIL_MDB_DLL) -r:Mono.Security.dll  -resource:config -resource:config_mobile -resource:machine.4_5.config -resource:Info.plist.tmpl $(linker_resources:%=-resource:%) $(tuner_sources) $(mmp_sources)
+	$(Q_MCS) $(SYSTEM_MCS) -debug -unsafe -out:mmp.exe $(DEFINES) -r:$(MONO_CECIL_DLL) -r:$(MONO_CECIL_MDB_DLL) -r:Mono.Security.dll  -resource:config -resource:config_mobile -resource:machine.4_5.config -resource:Info.plist.tmpl $(linker_resources:%=-resource:%) $(tuner_sources) $(mmp_sources)
 
 MMP_TARGETS = \
 	$(MAC_DESTDIR)$(MAC_FRAMEWORK_CURRENT_DIR)/bin/mmp \
@@ -153,6 +153,22 @@ $(MAC_DESTDIR)$(MAC_FRAMEWORK_CURRENT_DIR)/lib/mmp/Mono.Cecil.Mdb.dll: $(MONO_CE
 
 $(MMP_DIRECTORIES):
 	$(Q) mkdir -p $@
+
+%.registrar.mac.m     %.registrar.mac.h:     $(MAC_DESTDIR)$(MAC_FRAMEWORK_CURRENT_DIR)/lib/mono/Xamarin.Mac/%.dll mmp.exe 
+	$(Q_GEN) $(SYSTEM_MONO) --debug mmp.exe --xamarin-framework-directory=$(MAC_DESTDIR)$(MAC_FRAMEWORK_CURRENT_DIR) -q --runregistrar:$(abspath $@) --sdkroot $(XCODE_DEVELOPER_ROOT) --sdk $(OSX_SDK_VERSION)   $< --registrar:static --target-framework Xamarin.Mac,v1.0    --abi i386,x86_64
+	$(Q) touch $*.registrar.mac.m $*.registrar.mac.h
+
+%.registrar.mac.a:        %.registrar.mac.i386.a %.registrar.mac.x86_64.a
+	$(Q_LIPO) $(DEVICE_BIN_PATH)/lipo -create -output $@ $^
+
+%.registrar.mac.i386.a:   %.registrar.mac.m      %.registrar.mac.h
+	$(Q_CC) $(XCODE_CC) -DDEBUG -g -gdwarf-2 -x objective-c++ -o $@ -c -arch i386 $< -Wall
+
+%.registrar.mac.x86_64.a: %.registrar.mac.m     %.registrar.mac.h
+	$(Q_CC) $(XCODE_CC) -DDEBUG -g -gdwarf-2 -x objective-c++ -o $@ -c $< -Wall
+
+
+
 
 ifdef INCLUDE_MAC
 install-local:: $(MMP_TARGETS)

@@ -86,7 +86,6 @@ namespace Xamarin.Bundler {
 	public partial class Application
 	{
 		public string ExecutableName;
-		public string RootAssembly;
 		public BuildTarget BuildTarget;
 
 		public Version DeploymentTarget;
@@ -108,7 +107,6 @@ namespace Xamarin.Bundler {
 		public List<string> Extensions = new List<string> (); // A list of the extensions this app contains.
 
 		public bool FastDev;
-		public string RegistrarOutputLibrary;
 
 		public bool? EnablePie;
 		public bool NativeStrip = true;
@@ -493,48 +491,6 @@ namespace Xamarin.Bundler {
 			return false;
 		}
 
-		public void RunRegistrar ()
-		{
-			// The static registrar.
-			if (Registrar != RegistrarMode.Static)
-				throw new MonoTouchException (67, "Invalid registrar: {0}", Registrar); // this is only called during our own build
-
-			var registrar_m = RegistrarOutputLibrary;
-
-			var resolvedAssemblies = new List<AssemblyDefinition> ();
-			var ps = new ReaderParameters ();
-			ps.AssemblyResolver = new MonoTouchResolver () {
-				FrameworkDirectory = Driver.PlatformFrameworkDirectory,
-				RootDirectory = Path.GetDirectoryName (RootAssembly),
-			};
-			resolvedAssemblies.Add (ps.AssemblyResolver.Resolve ("mscorlib"));
-
-			var rootName = Path.GetFileNameWithoutExtension (RootAssembly);
-			switch (rootName) {
-			// MonoTouch.NUnitLite doesn't quite work yet, because its generated registrar code uses types
-			// from the generated registrar code for MonoTouch.Dialog-1 (and there is no header file (yet)
-			// for those types).
-//			case "MonoTouch.NUnitLite":
-//				resolvedAssemblies.Add (ps.AssemblyResolver.Resolve (rootName));
-//				goto case "MonoTouch.Dialog-1";
-			case "MonoTouch.Dialog-1":
-				resolvedAssemblies.Add (ps.AssemblyResolver.Resolve (rootName));
-				resolvedAssemblies.Add (ps.AssemblyResolver.Resolve (Driver.ProductAssembly));
-				break;
-			default:
-				if (rootName == Driver.ProductAssembly) {
-					resolvedAssemblies.Add (ps.AssemblyResolver.Resolve (rootName));
-				} else {
-					throw new MonoTouchException (66, "Invalid build registrar assembly: {0}", RootAssembly);
-				}
-				break;
-			}
-
-			BuildTarget = BuildTarget.Simulator;
-
-			var registrar = new XamCore.Registrar.StaticRegistrar (this);
-			registrar.GenerateSingleAssembly (resolvedAssemblies, Path.ChangeExtension (registrar_m, "h"), registrar_m, Path.GetFileNameWithoutExtension (RootAssembly));
-		}
 
 		public void Build ()
 		{
