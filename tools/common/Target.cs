@@ -44,7 +44,6 @@ namespace Xamarin.Bundler {
 		public HashSet<string> WeakFrameworks = new HashSet<string> ();
 
 		public IStaticRegistrar StaticRegistrar { get; set; }
-
 #if MONOMAC
 		public bool Is32Build { get { return !Driver.Is64Bit; } }
 		public bool Is64Build { get { return Driver.Is64Bit; } }

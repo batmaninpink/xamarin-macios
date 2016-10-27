@@ -438,7 +438,8 @@ namespace Xamarin.Bundler {
 
 			if (just_run_registrar)
 			{
-				App.RootAssembly = "Xamarin.Mac.dll";// assemblies [0];
+				App.AllowStaticRegistrarSingleArch = true;
+				App.RootAssembly = unprocessed [0];
 				App.AppDirectory = output_dir;
 				App.Registrar = RegistrarMode.Static;
 				App.RunRegistrar ();
@@ -953,8 +954,10 @@ namespace Xamarin.Bundler {
 				if (disable_lldb_attach)
 					sw.WriteLine ("\txamarin_disable_lldb_attach = true;");
 				sw.WriteLine ();
-				if (Driver.registrar == RegistrarMode.Static)
+				if (Driver.registrar == RegistrarMode.Static) {
 					sw.WriteLine ("\txamarin_create_classes ();");
+					sw.WriteLine ("\txamarin_create_classes ();");
+				}
 
 				if (App.EnableDebug)
 					sw.WriteLine ("\txamarin_debug_mode = TRUE;");
@@ -1006,7 +1009,7 @@ namespace Xamarin.Bundler {
 				registrarPath = Path.Combine (Cache.Location, "registrar.m");
 				var registrarH = Path.Combine (Cache.Location, "registrar.h");
 				BuildTarget.StaticRegistrar.LinkContext = BuildTarget.LinkContext;
-				BuildTarget.StaticRegistrar.Generate (BuildTarget.Resolver.ResolverCache.Values, registrarH, registrarPath);
+				BuildTarget.StaticRegistrar.Generate (BuildTarget.Resolver.ResolverCache.Values.Where (x => !x.Name.Name.Contains ("Xamarin.Mac")), registrarH, registrarPath);
 
 				var platform_assembly = BuildTarget.Resolver.ResolverCache.First ((v) => v.Value.Name.Name == XamCore.Registrar.Registrar.PlatformAssembly).Value;
 				Frameworks.Gather (platform_assembly, BuildTarget.Frameworks, BuildTarget.WeakFrameworks);
@@ -1130,6 +1133,10 @@ namespace Xamarin.Bundler {
 						args.Append ("-u _mono_profiler_startup_log -lz ");
 					}
 				}
+
+				if (registrar == RegistrarMode.Static)
+					args.Append (Path.Combine (GetXamMacPrefix (), "lib", "mmp/Xamarin.Mac.registrar.mac.a "));
+
 				args.Append ("-framework AppKit -liconv -x objective-c++ ");
 				args.Append ("-I").Append (Quote (Path.Combine (GetXamMacPrefix (), "include"))).Append (' ');
 				if (registrarPath != null)
@@ -1146,7 +1153,7 @@ namespace Xamarin.Bundler {
 					args.Append (Quote (state.SourcePath)).Append (' ');
 				}
 
-				var main = Path.Combine (Cache.Location, "main.m");
+				var main = Path.Combine (Cache.Location, "main.m ");
 				File.WriteAllText (main, mainSource);
 				args.Append (Quote (main));
 

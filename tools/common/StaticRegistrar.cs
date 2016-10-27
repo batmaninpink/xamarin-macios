@@ -639,6 +639,10 @@ namespace XamCore.Registrar {
 			
 		protected override bool Is64Bits {
 			get {
+#if !MTOUCH
+				if (Driver.App.AllowStaticRegistrarSingleArch)
+					return Driver.Is64Bit;
+#endif
 				if (IsSingleAssembly)
 					throw new InvalidOperationException ("Can't emit size-specific code in single assembly mode.");
 				return Target.Is64Build;
@@ -2229,7 +2233,6 @@ namespace XamCore.Registrar {
 				if (isPlatformType && IsSimulatorOrDesktop && IsMetalType (@class))
 					continue; // Metal isn't supported in the simulator.
 #else
-/*
 				// Don't register 64-bit only API on 32-bit XM
 				if (!Is64Bits)
 				{
@@ -2244,7 +2247,7 @@ namespace XamCore.Registrar {
 				// These are 64-bit frameworks that extend NSExtensionContext / NSUserActivity, which you can't do
 				// if the header doesn't declare them. So hack it away, since they are useless in 64-bit anyway
 				if (!Is64Bits && (IsMapKitType (@class) || IsIntentsType (@class)))
-					continue;*/
+					continue;
 #endif
 
 				
@@ -3652,8 +3655,10 @@ namespace XamCore.Registrar {
 		{
 			this.input_assemblies = assemblies;
 
-			foreach (var assembly in assemblies)
+			foreach (var assembly in assemblies) {
+				Console.WriteLine ("Generate - " + assembly.Name);
 				RegisterAssembly (assembly);
+			}
 
 			Generate (header_path, source_path);
 		}
